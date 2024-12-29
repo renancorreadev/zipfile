@@ -1,0 +1,431 @@
+openapi: 3.0.1
+info:
+  title: Result API
+  version: v1
+servers:
+  - url: http://localhost:8080
+    description: Generated server url
+paths:
+  /storage:
+    get:
+      operationId: download
+      description: Download File Storage
+      tags:
+        - storage
+      parameters:
+        - name: fileName
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: bucketName
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: folderName
+          required: false
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            'application/octet-stream':
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+      security:
+        - bearerAuth: []
+    post:
+      operationId: upload
+      description: Upload File Cloud Storage
+      tags:
+        - storage
+      parameters:
+        - name: bucketName
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: folder
+          required: false
+          in: query
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - file
+              type: object
+              properties:
+                # 'file' will be the field name in this multipart request
+                file:
+                  type: string
+                  format: binary
+                  nullable: false
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            'application/json':
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+  /mysql:
+    get:
+      tags:
+        - mysql
+      operationId: list
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - UP
+              - DOWN
+            default: UP
+          description: Status UP or DOWN
+        - name: pageable
+          required: false
+          in: query
+          schema:
+            $ref: '#/components/schemas/Pageable'
+          description: "you can send sort: ['id,DESC'] for sorted"
+      responses:
+        '202':
+          description: OK
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComponenteRepresentation'
+        '401':
+          description: Unauthorized
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - mysql
+      operationId: delete
+      parameters:
+        - name: id
+          in: query
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            'application/json':
+              schema:
+                type: string
+        '404':
+          description: Not Found
+          content:
+            'application/json':
+              schema:
+                type: string
+        '503':
+          description: Service Unavailable
+          content:
+            'application/json':
+              schema:
+                type: string
+        '200':
+          description: OK
+          content:
+            'application/json':
+              schema:
+                type: string
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - mysql
+      operationId: update
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComponenteRepresentation'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorRepresentation'
+        '200':
+          description: OK
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ComponenteRepresentation'
+      security:
+        - bearerAuth: []
+  /j_security_check:
+    post:
+      summary: Login
+      operationId: login
+      requestBody:
+        description: Login BFF - Back for Front
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRepresentation'
+      responses:
+        '200':
+          description: OK
+          content: {}
+        '201':
+          description: Created
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '403':
+          description: Forbidden
+          content: {}
+        '404':
+          description: Not Found
+          content: {}
+  /api-security/refresh:
+    post:
+      summary: Refresh Token
+      operationId: refreshToken
+      requestBody:
+        description: Refresh Token - Back for Front
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+        '201':
+          description: Created
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '403':
+          description: Forbidden
+          content: {}
+        '404':
+          description: Not Found
+          content: {}
+  /api-security/me:
+    get:
+      tags:
+        - Api Security
+      summary: Informações de acessos a partir das roles físicas.
+      operationId: securityInfo
+      responses:
+        '200':
+          description: OK
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserRepresentation'
+  /api-security/logout:
+    get:
+      tags:
+        - Api Security
+      summary: Invalida a sessão.
+      operationId: logout
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /api-utils/logger:
+    post:
+      summary: devolve os logs da aplicação.
+      operationId: logger
+      requestBody:
+        description: logs
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/LogRepresentation'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json;charset=UTF-8:
+              schema:
+                type: object
+        '201':
+          description: Created
+          content: {}
+        '401':
+          description: Unauthorized
+          content: {}
+        '403':
+          description: Forbidden
+          content: {}
+        '404':
+          description: Not Found
+          content: {}
+  /api-utils/status:
+    get:
+      summary: status
+      operationId: statusUsingGET
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json;charset=UTF-8:
+              schema:
+                $ref: '#/components/schemas/StatusUp'
+        '401':
+          description: Unauthorized
+          content: {}
+        '403':
+          description: Forbidden
+          content: {}
+        '404':
+          description: Not Found
+          content: {}
+
+components:
+  schemas:
+    ComponenteRepresentation:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        status:
+          type: string
+        version:
+          type: string
+    UserRepresentation:
+      type: object
+      properties:
+        name:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+    LoginRepresentation:
+      type: object
+      properties:
+        j_username:
+          type: string
+        j_password:
+          type: string
+          format: password
+    LogRepresentation:
+      title: LogRepresentation
+      type: object
+      properties:
+        apiError:
+          type: string
+        dateTime:
+          type: string
+        hostname:
+          type: string
+        href:
+          type: string
+        logLevel:
+          type: string
+        message:
+          type: string
+        navigatorInfo:
+          type: string
+    StatusUp:
+      title: StatusUp
+      type: object
+      properties:
+        status:
+          type: string
+    StorageRepresentation:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          type: string
+    Pageable:
+      description: minimal Pageable query parameters
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 0
+          default: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+        direction:
+          type: string
+          enum:
+            - ASC
+            - DESC
+          default: ASC
+        properties:
+          type: string
+          default: id
+    ErrorRepresentation:
+      type: object
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
